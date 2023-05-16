@@ -1,6 +1,6 @@
 /*==============================================================*/
 /* Nom de SGBD :  ORACLE Version 11g                            */
-/* Date de création :  15/05/2023 17:47:32                      */
+/* Date de crï¿½ation :  15/05/2023 17:47:32                      */
 /*==============================================================*/
 
 
@@ -16,6 +16,10 @@ drop table TERRITOIRE cascade constraints;
 
 drop table THEME cascade constraints;
 
+drop table ACTIVITE cascade constraints;
+
+drop table PROGRAMME cascade constraints;
+
 /*==============================================================*/
 /* Table : PARTICIPANT                                          */
 /*==============================================================*/
@@ -28,7 +32,8 @@ create table PARTICIPANT
    cpPers               CHAR(5),
    villePers            VARCHAR2(50),
    telPers              CHAR(10),
-   tpPers               CHAR(1)             
+   tpPers               CHAR(1),
+   dateNais             DATE,       
       constraint CKC_TPPERS_PARTICIP check (tpPers is null or (tpPers in ('P','C','E'))),
    constraint PK_PARTICIPANT primary key (cdPers)
 );
@@ -85,8 +90,8 @@ create table EVENEMENT
    numEv                INTEGER              not null,
    dateDebEv            DATE,
    dateFinEv            DATE,
-   nbPlaces             INTEGER             
-      constraint CKC_NBPLACES_EVENEMEN check (nbPlaces is null or (nbPlaces >= 21)),
+   nbPlaces             INTEGER                                    constraint CKC_NBPLACES_EVENEMEN check (nbPlaces is null or (nbPlaces >= 21)),
+   dureeEv              GENERATED ALWAYS AS (dateFinEv-dateDebEv) VIRTUAL,          
    tarif                NUMBER(6,2),
       constraint CKC_DATE_FIN_EVENEMEN check (dateFinEv is null or (dateFinEv >= dateDebEv)),
    constraint PK_EVENEMENT primary key (cdSite, numEv)
@@ -110,5 +115,38 @@ create table RESERVATION
    constraint PK_RESERVATION primary key (cdSite, cdPers, numEv, dateResa)
 );
 
+/*==============================================================*/
+/* Table : ACTIVITE                                             */
+/*==============================================================*/
+CREATE TABLE ACTIVITE AS
+(
+   SELECT cdAct, libAct AS nomAct
+   FROM TESTSAELD.ACTIVITE      
+);
 
+ALTER TABLE ACTIVITE ADD
+(
+    CONSTRAINT PK_ACTIVITE PRIMARY KEY (cdAct)
+);
 
+/*==============================================================*/
+/* Table : PROGRAMME                                            */
+/*==============================================================*/
+CREATE TABLE PROGRAMME 
+(
+   cdAct                CHAR(1 BYTE)         not null   CONSTRAINT FK_PROGRAMME_ACTIVITE REFERENCES ACTIVITE(cdAct) ON DELETE CASCADE,
+   cdSite               INTEGER              not null   CONSTRAINT FK_PROGRAMME_SITE REFERENCES SITE(cdSite) ON DELETE CASCADE,
+   tpPublic             VARCHAR2(4)          not null            
+      CONSTRAINT CKC_PROGRAMME_TPPUBLIC CHECK (tpPublic IN ('TOUS','+18','+10','+5')),   
+   CONSTRAINT PK_PROGRAMME PRIMARY KEY (cdAct, cdSite)
+);
+
+CREATE INDEX FK_SITE_REGROUPER_THEME         ON SITE        (cdTheme);
+CREATE INDEX FK_SITE_LOCALISER_TERRITOI      ON SITE        (cdTerr);
+CREATE INDEX FK_EVENEMEN_LI_EVENT_SITE       ON EVENEMENT   (numEv);
+CREATE INDEX FK_RESERVAT_LI_RESERV_PARTICIP  ON RESERVATION (cdPers);
+CREATE INDEX FK_RESERVAT_LI_RESERV_EVENEMEN  ON RESERVATION (cdSite,numEv);
+CREATE INDEX IX_NOMSITE                      ON SITE        (nomSite);
+CREATE INDEX IX_NOMPERS                      ON PARTICIPANT (nomPers);
+CREATE INDEX IX_PRENOMPERS                   ON PARTICIPANT (prenomPers);
+CREATE INDEX IX_NOMACTIVITE                  ON ACTIVITE    (nomAct);
