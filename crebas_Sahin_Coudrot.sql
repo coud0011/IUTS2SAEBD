@@ -69,7 +69,7 @@ create table SITE
    cdSite               INTEGER              not null,
    cdTheme              INTEGER                                   constraint FK_SITE_REGROUPER_THEME REFERENCES THEME (cdTheme),
    cdTerr               INTEGER                                   constraint FK_SITE_LOCALISER_TERRITOI REFERENCES TERRITOIRE (cdTerr),
-   nomSite              VARCHAR2(50),
+   nomSite              VARCHAR2(60),
    tpSite               VARCHAR2(50),
    adrSite              VARCHAR2(50),
    cpSite               CHAR(5),
@@ -150,3 +150,30 @@ CREATE INDEX IX_NOMSITE                      ON SITE        (nomSite);
 CREATE INDEX IX_NOMPERS                      ON PARTICIPANT (nomPers);
 CREATE INDEX IX_PRENOMPERS                   ON PARTICIPANT (prenomPers);
 CREATE INDEX IX_NOMACTIVITE                  ON ACTIVITE    (nomAct);
+
+/*==============================================================*/
+/* INSERTION : PARTICIPANT                                      */
+/*==============================================================*/
+DROP SEQUENCE CODE_PERS;
+CREATE SEQUENCE CODE_PERS
+START WITH 1
+INCREMENT BY 1;
+
+INSERT INTO PARTICIPANT (SELECT CODE_PERS.NEXTVAL, nomPers, prenomPers, adrPers, cpPers, villePers, REPLACE(telPers, '.', ''), tpPers, dateNais FROM TESTS1.EMPRUNTEUR);
+INSERT INTO PARTICIPANT (SELECT CODE_PERS.NEXTVAL, nom, prnm, adr, cp, localite, NULL, 'P', datNs FROM TESTS1.CLIENT);
+
+/*==============================================================*/
+/* INSERTION : SITE                                             */
+/*==============================================================*/
+INSERT INTO SITE (cdSite, nomSite, tpSite, adrSite, cpSite, villeSite, emailSite, telSite, siteWeb) SELECT cdSite, nomSite, tpSite, adrSite, cpSite, villeSite, emailSite, REPLACE(telSite, ' ', ''), siteWeb FROM TESTSAELD.SITE;
+
+
+/*==============================================================*/
+/* INSERTION : EVENEMENT                                        */
+/*==============================================================*/
+INSERT INTO EVENEMENT (cdSite, numEv, dateDebEv, dateFinEv, nbPlaces, tarif) SELECT cdSite, numEv, dateDebEv, dateFinEv, nbPlaces, tarif FROM TESTSAELD.EVENEMENT WHERE (nbPlaces>20 OR nbPlaces IS NULL);
+
+/*==============================================================*/
+/* INSERTION : RESERVATION                                      */
+/*==============================================================*/
+INSERT INTO RESERVATION (SELECT cdPers, cdSite, numEv, dateInscr, nbPlResa, modeReglt FROM TESTSAELD.INSCRIPTION WHERE cdSite||numEv IN (SELECT cdSite||numEv FROM TESTSAELD.EVENEMENT WHERE (nbPlaces>20 OR nbPlaces IS NULL)));
